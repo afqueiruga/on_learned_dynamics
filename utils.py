@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from matplotlib import pylab as plt
 from scipy.special import ellipj, ellipk
 
@@ -116,7 +115,7 @@ if __name__=='__main__':
     assert( np.linalg.norm(operator_from_tableau(true_A.numpy(), dt, rk_table['RK2-trap'])
          - hand_test_trap ) < 1.0e-8 )
 
-def one_step_factory(Lambda, dt, alpha=0.0):
+def one_step_factory(Lambda, dt, alpha):
     return np.linalg.inv( np.eye(2) - alpha*dt*Lambda ).dot(
                 np.eye(2) + (1.0-alpha)*dt*Lambda )
 
@@ -126,7 +125,7 @@ def operator_factory(Lambda, dt, method='euler'):
     elif method=='bweuler':
         return np.linalg.inv( np.eye(2) - dt*Lambda)
     elif method=='implicit_trap':
-        returnone_step_factory(0.5)
+        return one_step_factory(Lambda,dt,0.5)
     elif method=='explicit_adams':
         raise Exception("Didn't implement it")
     elif method=='midpoint':
@@ -137,31 +136,3 @@ def operator_factory(Lambda, dt, method='euler'):
         ark_key = 'RK4'
         tableau = rk_table[ark_key]
         return operator_from_tableau(Lambda, dt, tableau)
-
-
-#
-# Helpers for making results
-#
-def integrate_model(step_func, u0, steps):
-    with torch.no_grad():
-        u0 = initial_point
-        us = [u0.cpu().numpy()]
-        for i in range(nsteps):
-            un = step_func(u0)
-            us.append(un.cpu().numpy())
-            u0 = un
-        U = np.array(us).reshape((-1, u0.shape[-1]))
-    return U
-
-def integrate_and_plot(step_func, u0, steps):
-    pass
-
-
-#
-# Training code.
-#
-def learn_omega():
-    pass
-
-def learn_lambda():
-    pass

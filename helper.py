@@ -48,6 +48,7 @@ def get_batch(data, t, N_batch, N_future):
 # Training code.
 #
 def learn_omega(data, batch_size=25, n_future=1, verbose=False, device=None):
+    """Perform the one-step learning for a linear matrix."""
     if device is None:
         device = get_device()
 
@@ -55,23 +56,34 @@ def learn_omega(data, batch_size=25, n_future=1, verbose=False, device=None):
     optim = torch.optim.Adam(model.parameters(),1.0e-1)
     loss = torch.nn.MSELoss()
     losses=[]
-    #do_a_path_and_plot(model)
+    omega_trace = [ model.weight.data.cpu().numpy() ]
+
+    #if verbose:
+    #    integrate_and_plot(model, ylim=None,nsteps=1000)
+
 
     N_iter = 1000
     N_print = N_iter
+    N_trace = 100
     nsamp = data.shape[0] # The harmonic oscillator is periodic so a test set is meaningless
     for opt_iter in range(N_iter):
         idcs = torch.LongTensor(np.random.choice(nsamp-n_future, size=batch_size)).to(device)
         yy = [ torch.index_select(data ,0, idcs+i) for i in range(n_future+1) ]
         yy_pred = model(yy[0])
         L = loss(yy[1], yy_pred) # n_future=1
+        # try multiple steps into the future
         for fut in range(2,n_future+1):
             yy_pred = model(yy_pred)
             L += loss(yy[fut], yy_pred)
+        # Do the backward step and optimize
         optim.zero_grad()
         L.backward()
         optim.step()
-        losses.append(L)
+        losses.append(L.cpu().detach().numpy())
+        # Save omega to let us analyze its trajectory
+        if opt_iter%N_trace==N_trace-1:
+            omega_trace.append(model.weight.data.cpu().numpy())
+        # Print diagonistics during training
         if verbose and opt_iter%N_print==N_print-1:
             print(opt_iter,L.item())
             print(list(model.parameters()))
@@ -79,7 +91,9 @@ def learn_omega(data, batch_size=25, n_future=1, verbose=False, device=None):
     if verbose:
         print("Converged with L1: ",losses[-1])
         #plt.semilogy(losses)
-    return model, np.array([l.cpu().detach().numpy() for l in losses])
+    return model, np.array(losses), omega_trace
+
+
 
 def learn_lambda():
-    pass
+    """Perform the one-step learning for a linear matrix."""
