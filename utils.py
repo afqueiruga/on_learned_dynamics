@@ -13,11 +13,11 @@ def solution_harmonic_osc(u0, ts):
     return np.stack([theta_expr, d_theta_d_t], axis=1)
 
 #ts = np.linspace(0., 25., N_data)
-def solution_general_linear(Lambda, x0, ts):
+def solution_general_linear(Lambda, u0, ts):
     """Lambda is a square numpy array"""
     eigs, V = np.linalg.eig(Lambda)
     interior = np.exp(eigs.reshape((-1,1))*ts.reshape(1,-1))
-    x = np.einsum("ij,ja,jk,k->ai",
+    u = np.einsum("ij,ja,jk,k->ai",
                 V, interior, np.linalg.inv(V), u0 )
     return np.real(u)
 
@@ -116,22 +116,27 @@ if __name__=='__main__':
     assert( np.linalg.norm(operator_from_tableau(true_A.numpy(), dt, rk_table['RK2-trap'])
          - hand_test_trap ) < 1.0e-8 )
 
+def one_step_factory(Lambda, dt, alpha=0.0):
+    return np.linalg.inv( np.eye(2) - alpha*dt*Lambda ).dot(
+                np.eye(2) + (1.0-alpha)*dt*Lambda )
 
-def operator_factory(lmbda, dt, method='euler'):
+def operator_factory(Lambda, dt, method='euler'):
     if method=='euler':
-        return np.eye(2)+dt*lmbda_approx_induced
+        return np.eye(2)+dt*Lambda
+    elif method=='bweuler':
+        return np.linalg.inv( np.eye(2) - dt*Lambda)
+    elif method=='implicit_trap':
+        returnone_step_factory(0.5)
     elif method=='explicit_adams':
         raise Exception("Didn't implement it")
     elif method=='midpoint':
         ark_key = 'RK2-mid'
         tableau = rk_table[ark_key]
-        return operator_from_tableau(lmbda, dt, tableau)
+        return operator_from_tableau(Lambda, dt, tableau)
     elif method=='rk4':
         ark_key = 'RK4'
         tableau = rk_table[ark_key]
-        return operator_from_tableau(lmbda, dt, tableau)
-def make_integrator(Lambda, method, dt):
-    return np.eye(2,writeable=False)
+        return operator_from_tableau(Lambda, dt, tableau)
 
 
 #
