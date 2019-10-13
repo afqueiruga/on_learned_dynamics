@@ -44,6 +44,15 @@ def get_batch(data, t, N_batch, N_future):
 
 
 
+def exp_lr_scheduler(optimizer, epoch, lr_decay_rate=0.8, decayEpoch=[]):
+                    """Decay learning rate by a factor of lr_decay_rate every lr_decay_epoch epochs"""
+                    if epoch in decayEpoch:
+                        for param_group in optimizer.param_groups:
+                            param_group['lr'] *= lr_decay_rate
+                        return optimizer
+                    else:
+                        return optimizer
+
 #
 # Training code.
 #
@@ -95,5 +104,64 @@ def learn_omega(data, batch_size=25, n_future=1, verbose=False, device=None):
 
 
 
-def learn_lambda():
+def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
+    methods=('FW','BW','TR'), device=None, dt=1):
     """Perform the one-step learning for a linear matrix."""
+    if device is None:
+        device = get_device()
+
+    I = torch.eye(2, dtype=torch.double, device=device)
+    fwstep = lambda model, y : y + dt*model(y)
+    bwstep = lambda model, y : torch.einsum("ij,aj->ai",torch.inverse(I - dt*model.weight),y)
+    trstep = lambda model, y : torch.einsum("ij,aj->ai",torch.inverse(I-0.5*dt*model.weight), ( y + 0.5*dt*model(y) ))
+
+    model = torch.nn.Linear(2,2,bias=False).double().to(device)
+    optim = torch.optim.Adam(model.parameters(),lr=5.0e-2, weight_decay=0.0)
+    loss = torch.nn.MSELoss()
+    losses=[]
+    #do_a_path_and_plot(model)
+
+    N_iter = 1000
+    N_print = N_iter+1 #//10
+    nsamp = data.shape[0] # The harmonic oscillator is periodic so a test set is meaningless
+    for opt_iter in range(N_iter):
+        idcs = torch.LongTensor(np.random.choice(nsamp-n_future, size=batch_size)).to(device)
+        yy = [ torch.index_select(data,0,idcs+i) for i in range(n_future+1) ]
+        y_pred_fw = fwstep(model, yy[0])
+        y_pred_bw = bwstep(model, yy[0])
+        y_pred_tr = trstep(model, yy[0])
+
+        if methods == ('FW','BW','TR'):
+            L = loss(yy[1], y_pred_fw) + loss(yy[1], y_pred_bw) + loss(yy[1], y_pred_tr)
+        elif methods == ('FW','BW'):
+            L = loss(yy[1], y_pred_fw) + loss(yy[1], y_pred_bw)
+        elif methods == ('FW',):
+            L = loss(yy[1], y_pred_fw)
+        elif methods == ('BW','TR'):
+            L = loss(yy[1], y_pred_bw) + loss(yy[1], y_pred_tr)
+        elif methods == ('BW',):
+            L = loss(yy[1], y_pred_bw)
+        else:
+            L = loss(yy[1], y_pred_tr)
+
+        optim.zero_grad()
+        L.backward()
+        optim.step()
+        losses.append(L)
+        if verbose and opt_iter%N_print==N_print-1:
+            print(opt_iter,L.item())
+            print(list(model.parameters()))
+            #do_a_path_and_plot(model, trstep, ylim=None,nsteps=1000) # This is wrong now
+
+        exp_lr_scheduler(optim, opt_iter, lr_decay_rate=0.3, decayEpoch=[200,500,800])
+
+
+
+    if verbose:
+        print("Converged with L1: ",losses[-1])
+
+    nump_mat = model.weight.data.cpu().numpy()
+    op_tr = np.linalg.inv(np.eye(2) - 0.5*dt*nump_mat).dot( np.eye(2) + 0.5*dt*nump_mat )
+    op_fw = np.eye(2) + dt*nump_mat
+    op_bw = np.linalg.inv(np.eye(2) - dt*nump_mat)
+    return model, np.array([l.cpu().detach().numpy() for l in losses]), nump_mat, op_tr, op_fw, op_bw
