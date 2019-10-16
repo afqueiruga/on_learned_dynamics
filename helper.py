@@ -1,8 +1,18 @@
 import numpy as np
 import scipy as sci
 import torch
+import torch.nn.init as init
+
+#
+# Torch helpers to keep environments uniform.
+#
+def set_seed():
+    """Set one seed for reproducibility."""
+    np.random.seed(10)
+    torch.manual_seed(10)
 
 def get_device():
+    """Get a gpu if available."""
     if torch.cuda.device_count()>0:
         device = torch.device('cuda')
         print("Connected to a GPU")
@@ -12,9 +22,8 @@ def get_device():
     return device
 
 def data_to_torch(data, device):
+    """Keep the types uniform everywhere."""
     return torch.tensor(data, dtype=torch.float64, device=device)
-
-
 
 #
 # Helpers for making results
@@ -45,13 +54,13 @@ def get_batch(data, t, N_batch, N_future):
 
 
 def exp_lr_scheduler(optimizer, epoch, lr_decay_rate=0.8, decayEpoch=[]):
-                    """Decay learning rate by a factor of lr_decay_rate every lr_decay_epoch epochs"""
-                    if epoch in decayEpoch:
-                        for param_group in optimizer.param_groups:
-                            param_group['lr'] *= lr_decay_rate
-                        return optimizer
-                    else:
-                        return optimizer
+    """Decay learning rate by a factor of lr_decay_rate every lr_decay_epoch epochs"""
+    if epoch in decayEpoch:
+        for param_group in optimizer.param_groups:
+            param_group['lr'] *= lr_decay_rate
+        return optimizer
+    else:
+        return optimizer
 
 #
 # Training code.
@@ -105,11 +114,12 @@ def learn_omega(data, batch_size=25, n_future=1, verbose=False, device=None):
 
 
 def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
-    methods=('FW','BW','TR'), device=None, dt=1):
+                 methods=('FW','BW','TR'), device=None, dt=1):
     """Perform the one-step learning for a linear matrix."""
     if device is None:
         device = get_device()
 
+    # Implementations of one-step methods
     I = torch.eye(2, dtype=torch.double, device=device)
     fwstep = lambda model, y : y + dt*model(y)
     bwstep = lambda model, y : torch.einsum("ij,aj->ai",torch.inverse(I - dt*model.weight),y)
