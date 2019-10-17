@@ -28,9 +28,8 @@ def data_to_torch(data, device):
 #
 # Helpers for making results
 #
-def integrate_model(step_func, u0, steps):
+def integrate_model(step_func, u0, nsteps):
     with torch.no_grad():
-        u0 = initial_point
         us = [u0.cpu().numpy()]
         for i in range(nsteps):
             un = step_func(u0)
