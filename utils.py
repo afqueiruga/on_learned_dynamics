@@ -56,6 +56,7 @@ def one_step_factory(Lambda, dt, alpha):
                 np.eye(2) + (1.0-alpha)*dt*Lambda )
 
 def operator_factory(Lambda, dt, method='euler'):
+    """The keys correspond to torchdiffeq, not afqsrungekutta"""
     if method=='euler':
         return np.eye(2)+dt*Lambda
     elif method=='bweuler':
