@@ -42,12 +42,15 @@ def integrate_and_plot(step_func, u0, nsteps, ylim=None):
     pass
 
 
+#
+# Helpers for training
+#
 def get_batch(data, t, N_batch, N_future):
-    idcs = np.random.choice(np.arange(data.shape[0] - N_future , dtype=np.int64), N_batch, replace=False)
+    idcs = np.random.choice(np.arange(data.shape[0] - (N_future+1) , dtype=np.int64), N_batch, replace=False)
     s = torch.from_numpy(idcs)
     batch_u0 = data[s]  # (M, D)
-    batch_t= t[:N_future]  # (T)
-    batch_u = torch.stack([ data[s + i] for i in range(N_future)], dim=0)  # (T, M, D)
+    batch_t= t[:(N_future+1)]  # (T)
+    batch_u = torch.stack([ data[s+i] for i in range(N_future+1)], dim=0)  # (T, M, D)
     return batch_u0, batch_t, batch_u
 
 
@@ -174,3 +177,42 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
     op_fw = np.eye(2) + dt*nump_mat
     op_bw = np.linalg.inv(np.eye(2) - dt*nump_mat)
     return model, np.array([l.cpu().detach().numpy() for l in losses]), nump_mat, op_tr, op_fw, op_bw
+
+
+
+#
+# 
+#
+def learn_rnn(data, model=None, batch_size=25, n_future=1, 
+              learning_rate = 1.0e-4, N_iter = 50000,
+              verbose=False, device=None):
+    """Perform the one-step learning for a linear matrix."""
+    if device is None:
+        device = get_device()
+    if model==None:
+        model = torch.nn.Linear(data.shape[-1],data.shape[-1],bias=False).double().to(device)
+    optim = torch.optim.Adam(model.parameters(),1.0e-4)
+    loss = torch.nn.MSELoss()
+    losses=[]
+    N_print, N_trace = N_iter, 100
+    nsamp = data.shape[0] # The harmonic oscillator is periodic so a test set is meaningless
+    for opt_iter in range(N_iter):
+        idcs = torch.LongTensor(np.random.choice(nsamp-n_future, size=batch_size)).to(device)
+        yy = [ torch.index_select(data ,0, idcs+i) for i in range(n_future+1) ]
+        yy_pred = model(yy[0])
+        L = loss(yy[1], yy_pred) # n_future=1
+        # try multiple steps into the future
+        for fut in range(2,n_future+1):
+            yy_pred = model(yy_pred)
+            L += loss(yy[fut], yy_pred)
+        # Do the backward step and optimize
+        optim.zero_grad()
+        L.backward()
+        optim.step()
+        losses.append(L.cpu().detach().numpy())
+        # Print diagonistics during training
+        if verbose and opt_iter%N_print==N_print-1:
+            print(opt_iter,L.item())
+    if verbose:
+        print("Converged with L1: ",losses[-1])
+    return model, np.array(losses),

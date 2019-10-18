@@ -17,7 +17,7 @@ def deep(widths,Act=torch.nn.ReLU):
 #
 # Basic Classes
 #
-def ShallowNet(class.nn.Module):
+class ShallowNet(torch.nn.Module):
     """Just a basic shallow network"""
     def __init__(self, in_dim, out_dim, hidden=10):
         super(ShallowNet,self).__init__()
@@ -25,7 +25,7 @@ def ShallowNet(class.nn.Module):
     def forward(self,x):
         return self.net(x)
     
-def ShallowSkipNet(class.nn.Module):
+class ShallowSkipNet(torch.nn.Module):
     """A basic shallow network with a skip connection"""
     def __init__(self, dim, hidden=10):
         super(ShallowSkipNet,self).__init__()
@@ -36,7 +36,8 @@ def ShallowSkipNet(class.nn.Module):
 #
 # Networks for ODEs. A different call structure
 #
-def ShallowODE(class.nn.Module):
+class ShallowODE(torch.nn.Module):
+    """A basic shallow network that takes in a t as well"""
     def __init__(self, dim, hidden=10):
         super(ShallowODE,self).__init__()
         self.net = shallow(dim,hidden,dim)
