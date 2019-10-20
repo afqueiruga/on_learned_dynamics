@@ -1,4 +1,5 @@
 import torch
+import functools
 
 #
 # Helper functions for making standard networks
@@ -17,7 +18,26 @@ def deep(widths,Act=torch.nn.ReLU):
         layers.extend([torch.nn.Linear(widths[i],width[i+1]), Act()])
     layers.append(torch.nn.Linear(width[-2],width[-1]))
     return torn.nn.Sequential(*layers)
-    
+ 
+#
+# Extra Building Blocks
+#
+class MultiLinear(torch.nn.Module):
+    """Like Linear, but allows for higher ranks.
+    TODO: Doesn't work without batching. """
+    def __init__(self, in_dims, out_dims, bias=True):
+        super(MultiLinear, self).__init__()
+        self.in_dims = in_dims
+        self.out_dims = out_dims
+        in_features = functools.reduce(lambda x,y:x*y, in_dims)
+        out_features = functools.reduce(lambda x,y:x*y, out_dims)
+        self.net = torch.nn.Linear(in_features, out_features, bias=bias)
+    def forward(self, x):
+        """This assumes at least one batch dim"""
+        xflat = torch.flatten(x, start_dim=-len(self.in_dims)-1,end_dim=-1)
+        hflat = self.net(xflat)
+        return torch.reshape( hflat, hflat.shape[:-len(self.out_dims)-1]+self.out_dims )
+
 #
 # Basic Classes
 #
