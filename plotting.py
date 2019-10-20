@@ -28,7 +28,6 @@ def trajectory_plots(trajs):
     plt.locator_params(axis='y', nbins=6)
     plt.locator_params(axis='x', nbins=6)
    
-
     plt.subplot(1,2,2)
     for data in trajs:
         plt.plot(data[:,0],data[:,1], '-', c='#fbb4ae', lw=3)
