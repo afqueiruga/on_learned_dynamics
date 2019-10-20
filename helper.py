@@ -35,7 +35,7 @@ def integrate_model(step_func, u0, nsteps):
             un = step_func(u0)
             us.append(un.cpu().numpy())
             u0 = un
-        U = np.array(us).reshape((-1, u0.shape[-1]))
+        U = np.array(us).reshape((-1,)+ u0.shape[1:]))
     return U
 
 def integrate_and_plot(step_func, u0, nsteps, ylim=None):
