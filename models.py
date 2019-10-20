@@ -12,7 +12,11 @@ def shallow(in_dim,hidden,out_dim,Act=torch.nn.ReLU):
         )
 def deep(widths,Act=torch.nn.ReLU):
     """Make a deep FCMLP given width specifications. Degenerates to a shallow layer if len(widths)==3"""
-    raise NotImplemented()
+    layers = []
+    for i in range(len(widths)-1):
+        layers.extend([torch.nn.Linear(widths[i],width[i+1]), Act()])
+    layers.append(torch.nn.Linear(width[-2],width[-1]))
+    return torn.nn.Sequential(*layers)
     
 #
 # Basic Classes

@@ -24,3 +24,12 @@ def train_a_neural_ode(data, ts, model=None, batch_size=25, n_future=1,
                 pred_y = torchdiffeq.odeint(model, batch_y0, batch_t)
                 loss = torch.mean(torch.abs(pred_y - batch_y))
     return model,np.array(losses)
+
+
+def solve_and_plot(model, model_ts, data, data_ts=None, method='rk4', idcs=0):
+    if data_ts is None:
+        data_ts = model_ts
+    with torch.no_grad():
+        pred = torchdiffeq.odeint(model, data[0,:], torch_ts, method=method)
+    plt.plot(data_ts.cpu().numpy(), data.detach().cpu().numpy()[:,idcs], '--')
+    plt.plot(model_ts.cpu().numpy(), pred.detach().cpu().numpy()[:,idcs])
