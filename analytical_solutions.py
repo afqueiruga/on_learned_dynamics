@@ -24,12 +24,33 @@ def true_omega_linear(Lambda, dt):
     return np.real(Omega)
 
 #
-# The wave
+# The wave equation in 1D
 #
-def solution_wave(k, ts, u0):
-    """Uses detest"""
-    # TODO
-    pass
+# A few preset interesting functions
+WAVE_PARAMS = [
+    {},
+    {'u0':lambda x: -x**3+x},
+    {'u0':lambda x: sympy.sin(2.0*x*sympy.pi)},
+    {'u0':lambda x: sympy.sin(4.0*x*sympy.pi)},
+    {'u0':lambda x: sympy.sin(3.0*x*sympy.pi)+sympy.sin(4.0*x*sympy.pi)},
+    {'u0':lambda x: sympy.sin(2.0*x*sympy.pi)+sympy.sin(4.0*x*sympy.pi)},
+    {'u0':lambda x: sympy.sin(2.0*x*sympy.pi)+sympy.sin(8.0*x*sympy.pi)},
+    {'u0':lambda x: 10.0*(x-x**2)},
+    {'u0':lambda x: 15.0*(-x+x**2)},
+    {'u0':lambda x: -x**3+x**2},
+]
+def make_wave_dataset(NX,NT, t_max=100, params={}):
+    """Returns a numpy array with dimensions (N_time=NT, N_channel=2, N_space=NX)"""
+    import detest
+    xs = np.linspace(0,1,NX)
+    ts = np.linspace(0,t_max,NT)
+    grid = np.meshgrid(xs,ts)
+    orc = detest.oracles.WaveEquation1D(params)
+    res = orc(np.c_[grid[0].ravel(),grid[1].ravel()])
+
+    for k in res.keys():
+        res[k] = res[k].reshape(NT,1,NX)
+    return ts, np.concatenate([res['u'],res['v']], axis=1)
 
 #
 # The nonlinear pendulum
