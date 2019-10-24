@@ -103,14 +103,15 @@ def plot_flow(X, m, n):
 def make_animation(img, interval=10, transpose=True):
     fig, ax = plt.subplots()
     minmax = np.max(np.abs(img)) * 0.65
-    canvas = plt.imshow(img[0,:,:].T, interpolation='none',
+    tr = lambda x : x.T if transpose else x
+    canvas = plt.imshow(tr(img[0,:,:]), interpolation='none',
                         cmap=cmocean.cm.balance, 
                         #interpolation='bicubic', 
                         vmin=-minmax, vmax=minmax)
     plt.axis('off')
     plt.tight_layout()
     def animate(i):
-        canvas.set_array(img[i,:,:].T)
+        canvas.set_array(tr(img[i,:,:]))
         return canvas,
-    ani = animation.FuncAnimation(fig, animate, frames=img.shape[0], interval = 10)
+    ani = animation.FuncAnimation(fig, animate, frames=img.shape[0], interval = interval)
     return ani.to_jshtml()

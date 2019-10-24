@@ -184,8 +184,8 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
 # 
 #
 def learn_rnn(data, model=None, batch_size=25, n_future=1, 
-              learning_rate = 1.0e-4, N_iter = 50000,
-              verbose=False, device=None):
+              learning_rate = 1.0e-4, N_iter = 50000, N_print=1e10,
+              verbose=False, device=None, callback=None):
     """Perform the one-step learning for a linear matrix."""
     if device is None:
         device = get_device()
@@ -194,7 +194,7 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
     optim = torch.optim.Adam(model.parameters(),1.0e-4)
     loss = torch.nn.MSELoss()
     losses=[]
-    N_print, N_trace = N_iter, 100
+    N_print, N_trace = N_print, 100
     nsamp = data.shape[0] # The harmonic oscillator is periodic so a test set is meaningless
     for opt_iter in range(N_iter):
         idcs = torch.LongTensor(np.random.choice(nsamp-n_future, size=batch_size)).to(device)
@@ -210,6 +210,8 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
         L.backward()
         optim.step()
         losses.append(L.cpu().detach().numpy())
+        if opt_iter%N_print==N_print-1:
+            callback(model,opt_iter,L.item())
         # Print diagonistics during training
         if verbose and opt_iter%N_print==N_print-1:
             print(opt_iter,L.item())
