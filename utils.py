@@ -1,6 +1,16 @@
 import numpy as np
 
 #
+# Routines for analyzing systems
+#
+def lambda_of_omega(Omega):
+    """Takes the matrix log of a discrete operator to extract the continuous operator."""
+    w,V = np.linalg.eig(Omega)
+    Lambda = 1/dt * V @ np.diag(np.log(w)) @ np.linalg.inv(V)
+    Lambda = np.array(Lambda,dtype=np.double)
+    return Lambda
+
+#
 # Routines for making numerical integrators
 #
 #import afqsrungekutta as ark
