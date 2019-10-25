@@ -41,17 +41,17 @@ class MultiLinear(torch.nn.Module):
 #
 class ShallowNet(torch.nn.Module):
     """Just a basic shallow network"""
-    def __init__(self, in_dim, out_dim, hidden=10):
+    def __init__(self, in_dim, out_dim, hidden=10, Act=torch.nn.ReLU):
         super(ShallowNet,self).__init__()
-        self.net = shallow(in_dim,hidden,out_dim)
+        self.net = shallow(in_dim,hidden,out_dim,Act=Act)
     def forward(self,x):
         return self.net(x)
     
 class ShallowSkipNet(torch.nn.Module):
     """A basic shallow network with a skip connection"""
-    def __init__(self, dim, hidden=10):
+    def __init__(self, dim, hidden=10, Act=torch.nn.ReLU):
         super(ShallowSkipNet,self).__init__()
-        self.net = shallow(dim,hidden,dim)
+        self.net = shallow(dim,hidden,dim,Act=Act)
     def forward(self,x):
         return x+self.net(x)
 
@@ -60,9 +60,9 @@ class ShallowSkipNet(torch.nn.Module):
 #
 class ShallowODE(torch.nn.Module):
     """A basic shallow network that takes in a t as well"""
-    def __init__(self, dim, hidden=10):
+    def __init__(self, dim, hidden=10, Act=torch.nn.ReLU):
         super(ShallowODE,self).__init__()
-        self.net = shallow(dim,hidden,dim)
+        self.net = shallow(dim,hidden,dim,Act=Act)
     def forward(self,t,x):
         return self.net(x)
     

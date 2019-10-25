@@ -32,35 +32,40 @@ rk_table = {
             'c': array([0. , 0.5, 0.5, 1. ])}
 }
 
-def operator_from_tableau(lmbda, dt, tableau):
+def operator_from_tableau(Lambda, dt, tableau):
     """Make the discrete operator for a linear ODE for an explicit RK tableau"""
+    Lambda.shape[0]
     # Assuming explicit
     a = tableau['a']
     b = tableau['b']
     c = tableau['c']
-    I = np.eye(lmbda.shape[0])
+    I = np.eye(Lambda.shape[0])
     Omegas = [ lmbda ]
     for i in range(1,len(c)):
         dui_du0 = I.copy()
         for j in range(i):
             dui_du0 += dt*a[i,j]*Omegas[j]
-        Omegai = lmbda.dot( dui_du0 )
+        Omegai = Lambda @ dui_du0
         Omegas.append(Omegai)
     Omega_full = I.copy()
     for j in range(len(b)):
         Omega_full += dt*b[j]*Omegas[j]
     return Omega_full
 
+
 def one_step_factory(Lambda, dt, alpha):
-    return np.linalg.inv( np.eye(2) - alpha*dt*Lambda ).dot(
-                np.eye(2) + (1.0-alpha)*dt*Lambda )
+    dim = Lambda.shape[0]
+    return np.linalg.inv( np.eye(dim) - alpha*dt*Lambda ).dot(
+                np.eye(dim) + (1.0-alpha)*dt*Lambda )
+
 
 def operator_factory(Lambda, dt, method='euler'):
-    """The keys correspond to torchdiffeq, not afqsrungekutta"""
+    """Make an Omega discrete transfer function from the continuous companion matrix Lambda. 
+    The keys correspond to torchdiffeq, not afqsrungekutta"""
     if method=='euler':
-        return np.eye(2)+dt*Lambda
+        return np.eye(Lambda.shape[0])+dt*Lambda
     elif method=='bweuler':
-        return np.linalg.inv( np.eye(2) - dt*Lambda)
+        return np.linalg.inv( np.eye(Lambda.shape[0]) - dt*Lambda)
     elif method=='implicit_trap':
         return one_step_factory(Lambda,dt,0.5)
     elif method=='explicit_adams':
@@ -77,10 +82,11 @@ def operator_factory(Lambda, dt, method='euler'):
     
 if __name__=='__main__':
     # Test with FWEuler
-    hand_test_fweuler = (np.eye(2)+dt*true_A.numpy())
-    assert( np.linalg.norm(operator_from_tableau(true_A.numpy(), dt, rk_table['FWEuler'])
+    A = np.array([[0.1,1.0],[-1.0,0.1]])
+    hand_test_fweuler = (np.eye(2)+dt*true_A)
+    assert( np.linalg.norm(operator_from_tableau(A, dt, rk_table['FWEuler'])
                        - hand_test_fweuler )<1.0e-8 )
     # Test with Trapezoidal
-    hand_test_trap = np.eye(2)+dt*true_A.numpy() + dt**2/2.0*true_A.numpy().dot(true_A.numpy())
-    assert( np.linalg.norm(operator_from_tableau(true_A.numpy(), dt, rk_table['RK2-trap'])
+    hand_test_trap = np.eye(2)+dt*A + dt**2/2.0*A.dot(A)
+    assert( np.linalg.norm(operator_from_tableau(A, dt,rk_table['RK2-trap'])
          - hand_test_trap ) < 1.0e-8 )
