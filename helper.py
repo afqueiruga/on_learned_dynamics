@@ -184,7 +184,7 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
 # 
 #
 def learn_rnn(data, model=None, batch_size=25, n_future=1, 
-              learning_rate = 1.0e-4, N_iter = 50000, N_print=1e10,
+              learning_rate = 1.0e-4, N_iter = 50000, N_print=1e10, gamma=0.0,
               verbose=False, device=None, callback=None):
     """Perform the one-step learning for a linear matrix."""
     if device is None:
@@ -206,10 +206,17 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
             yy_pred = model(yy_pred)
             L += loss(yy[fut], yy_pred)
         # Do the backward step and optimize
+        L += torch.sum(torch.abs(model.net.weight)) * gamma + torch.sum((model.net.weight)**2) * 1e-7
         optim.zero_grad()
         L.backward()
         optim.step()
         losses.append(L.cpu().detach().numpy())
+
+
+
+        #model.net.weight.data[:] = torch.nn.functional.softshrink(model.net.weight.data, gamma)
+
+
         if opt_iter%N_print==N_print-1:
             callback(model,opt_iter,L.item())
         # Print diagonistics during training

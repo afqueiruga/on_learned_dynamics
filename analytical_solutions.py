@@ -41,7 +41,7 @@ WAVE_PARAMS = [
 ]
 def make_wave_dataset(NX,NT, t_max=100, params={}):
     """Returns a numpy array with dimensions (N_time=NT, N_channel=2, N_space=NX)"""
-    import detest
+    import detest.oracles
     xs = np.linspace(0,1,NX)
     ts = np.linspace(0,t_max,NT)
     grid = np.meshgrid(xs,ts)

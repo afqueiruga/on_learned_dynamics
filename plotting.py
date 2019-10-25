@@ -5,6 +5,10 @@ import matplotlib.animation as animation
 import cmocean
 from IPython.display import HTML
 
+#from colorspace import diverging_hcl
+#pal = diverging_hcl(palette='Blue-Red 2')
+
+
 #
 # Universal settings for what paper figures should look like
 #
@@ -85,21 +89,29 @@ def plot_flow(X, m, n):
     y2 = np.arange(0, n, 1)
     mX, mY = np.meshgrid(x2, y2)
 
-    minmax = np.max(np.abs(X)) * 0.65
+    minmax = np.max(np.abs(X)) * 0.85
     #plt.figure(facecolor="white",  edgecolor='k', figsize=(7.9,4.7))
     im = plt.imshow(X.T, cmap=cmocean.cm.balance, interpolation='bicubic', vmin=-minmax, vmax=minmax)
     plt.contourf(mX, mY, X.T, 90, cmap=cmocean.cm.balance, alpha=1, vmin=-minmax, vmax=minmax)
-    
-    
+
+    #im = plt.imshow(X.T, cmap=pal.cmap(name = "Normal Color Vision"), interpolation='bicubic', vmin=-minmax, vmax=minmax)
+    #plt.contourf(mX, mY, X.T, 80, cmap=pal.cmap(name = "Normal Color Vision"), alpha=1, vmin=-minmax, vmax=minmax)
+
+    #im = plt.imshow(X.T, cmap=pal.cmap(100, name = "Color Map with 100 Colors"), interpolation='bicubic', vmin=-minmax, vmax=minmax)
+    #plt.contourf(mX, mY, X.T, 80, cmap=pal.cmap(100, name = "Color Map with 100 Colors"), alpha=1, vmin=-minmax, vmax=minmax)
+
+
     circ=plt.Circle((50,99), radius=30, color='#636363', fill=True)
-    im.axes.add_patch(circ)   
-        
+    im.axes.add_patch(circ)
+
     plt.axis('off')
     plt.tight_layout()
     #plt.show()
     #plt.close()
-    
-    
+
+
+
+
 def make_animation(img, interval=10, transpose=True):
     fig, ax = plt.subplots()
     minmax = np.max(np.abs(img)) * 0.65
