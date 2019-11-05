@@ -42,6 +42,16 @@ def integrate_and_plot(step_func, u0, nsteps, ylim=None):
     pass
 
 
+def integrate_matrix(Omega, u0, nsteps):
+    """Integrate when it's a numpy matrix"""
+    shape = u0.shape
+    us = [u0]
+    for i in range(nsteps):
+        un = Omega @ u0.flatten()
+        us.append(un.reshape(shape))
+        u0 = un
+    return np.concatenate(us,axis=0)
+
 #
 # Helpers for training
 #
@@ -167,8 +177,6 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
 
         exp_lr_scheduler(optim, opt_iter, lr_decay_rate=0.3, decayEpoch=[200,500,800])
 
-
-
     if verbose:
         print("Converged with L1: ",losses[-1])
 
@@ -181,12 +189,13 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
 
 
 #
-# 
-#
+# Learn a self-feeding model
+# TODO: RNN is the wrong word
 def learn_rnn(data, model=None, batch_size=25, n_future=1, 
-              learning_rate = 1.0e-4, N_iter = 50000, N_print=1e10, gamma=0.0,
+              learning_rate = 1.0e-4, N_iter = 50000, N_print=1e10, 
+              gamma_L1=0.0, gamma_L2=0.0,
               verbose=False, device=None, callback=None):
-    """Perform the one-step learning for a linear matrix."""
+    """Perform the learning for an arbitrary model."""
     if device is None:
         device = get_device()
     if model==None:
@@ -205,23 +214,27 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
         for fut in range(2,n_future+1):
             yy_pred = model(yy_pred)
             L += loss(yy[fut], yy_pred)
+        # Add regularizaiton
+        # TODO: detect weights; this only works on one type of model
+        if gamma_L1 > 0:
+            L += gamma_L1*torch.sum(torch.abs(model.net.weight))
+        if gamma_L2 > 0:
+            L += gamma_L2*torch.sum((model.net.weight)**2)
         # Do the backward step and optimize
-        L += torch.sum(torch.abs(model.net.weight)) * gamma + torch.sum((model.net.weight)**2) * 1e-7
         optim.zero_grad()
         L.backward()
         optim.step()
         losses.append(L.cpu().detach().numpy())
 
-
-
         #model.net.weight.data[:] = torch.nn.functional.softshrink(model.net.weight.data, gamma)
 
-
-        if opt_iter%N_print==N_print-1:
+        if not callback is None and opt_iter%N_print==N_print-1:
             callback(model,opt_iter,L.item())
         # Print diagonistics during training
         if verbose and opt_iter%N_print==N_print-1:
             print(opt_iter,L.item())
     if verbose:
         print("Converged with L1: ",losses[-1])
+    if not callback is None:
+        callback(model,opt_iter,L.item())
     return model, np.array(losses),

@@ -36,6 +36,15 @@ class MultiLinear(torch.nn.Module):
         hflat = self.net(xflat)
         return torch.reshape( hflat, hflat.shape[:-1]+self.out_dims )
 
+class MultiLinearODE(MultiLinear):
+    """MultiLinear with a t"""
+    def __init__(self, *args, **kwargs):
+        super(MultiLinearODE,self).__init__(*args,**kwargs)
+    def forward(self, t, x):
+        xflat = torch.flatten(x, start_dim=-len(self.in_dims))
+        hflat = self.net(xflat)
+        return torch.reshape( hflat, hflat.shape[:-1]+self.out_dims )
+    
 #
 # Basic Classes
 #
