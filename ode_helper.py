@@ -20,7 +20,7 @@ def train_a_neural_ode(data, ts, model=None, batch_size=25, n_future=1,
         loss = torch.mean(torch.abs(pred_y - batch_y))
         loss.backward()
         optimizer.step()
-        losses.append(loss.detach().numpy())
+        losses.append(loss.detach().cpu().numpy())
         if itr % 1000 == 0:
             with torch.no_grad():
                 pred_y = torchdiffeq.odeint(model, batch_y0, batch_t)
@@ -29,7 +29,7 @@ def train_a_neural_ode(data, ts, model=None, batch_size=25, n_future=1,
 
 
 def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_future=1, 
-                        learning_rate = 1.0e-4, weight_decay = 1e-5, N_iter=50000,
+                        learning_rate = 1.0e-4, weight_decay = 0, N_iter=50000,
                         callback=None,
                         verbose=False, device=None, methods=('euler','midpoint','rk4')):
     if device is None:
@@ -52,13 +52,15 @@ def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_futur
             L += torch.mean(torch.abs(pred_y - batch_y))
         L.backward()
         optimizer.step()
-        losses.append(L.detach().numpy())
+        losses.append(L.detach().cpu().numpy())
         if not callback is None and opt_iter%N_print==N_print-1:
-            callback(model,opt_iter,L.item())
+            callback(model,opt_iter,L.cpu().item())
         #if opt_iter % 1000 == 0:
         #    with torch.no_grad():
         #        pred_y = torchdiffeq.odeint(model, batch_y0, batch_t)
         #        loss = torch.mean(torch.abs(pred_y - batch_y))
+    if not callback is None:
+        callback(model,opt_iter,L.cpu().item())
     return model,np.array(losses)
 
 

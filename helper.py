@@ -88,10 +88,6 @@ def learn_omega(data, batch_size=25, n_future=1, verbose=False, device=None):
     losses=[]
     omega_trace = [ model.weight.data.cpu().numpy() ]
 
-    #if verbose:
-    #    integrate_and_plot(model, ylim=None,nsteps=1000)
-
-
     N_iter = 1000
     N_print = N_iter
     N_trace = 100
@@ -200,7 +196,7 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
         device = get_device()
     if model==None:
         model = torch.nn.Linear(data.shape[-1],data.shape[-1],bias=False).double().to(device)
-    optim = torch.optim.Adam(model.parameters(),1.0e-4)
+    optim = torch.optim.Adam(model.parameters(),learning_rate)
     loss = torch.nn.MSELoss()
     losses=[]
     N_print, N_trace = N_print, 100
