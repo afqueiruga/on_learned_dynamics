@@ -30,14 +30,14 @@ def train_a_neural_ode(data, ts, model=None, batch_size=25, n_future=1,
 
 def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_future=1, 
                         learning_rate = 1.0e-4, weight_decay = 0, N_iter=50000,
-                        callback=None,
+                        gamma_L1 = 0, gamma_L2 = 0,
+                        N_print=100,callback=None,
                         verbose=False, device=None, methods=('euler','midpoint','rk4')):
     if device is None:
         device = get_device()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                                 weight_decay=weight_decay)
     losses = []
-    N_print, N_trace = N_iter, 100
     for opt_iter in range(1, N_iter):
         optimizer.zero_grad()
         batch_y0, batch_t, batch_y = get_batch(data, ts,
@@ -50,6 +50,13 @@ def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_futur
             pred_y = torchdiffeq.odeint(model, batch_y0, batch_t,
                                     method=met)
             L += torch.mean(torch.abs(pred_y - batch_y))
+        # Add regularizaiton
+        # TODO: detect weights; this only works on one type of model
+        if gamma_L1 > 0:
+            L += gamma_L1*torch.sum(torch.abs(model.net.weight))
+        if gamma_L2 > 0:
+            L += gamma_L2*torch.sum((model.net.weight)**2)
+        # Do the backward step and optimize
         L.backward()
         optimizer.step()
         losses.append(L.detach().cpu().numpy())
@@ -60,7 +67,7 @@ def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_futur
         #        pred_y = torchdiffeq.odeint(model, batch_y0, batch_t)
         #        loss = torch.mean(torch.abs(pred_y - batch_y))
     if not callback is None:
-        callback(model,opt_iter,L.cpu().item())
+        callback(model,opt_iter,L.cpu().item(), do_it=True)
     return model,np.array(losses)
 
 

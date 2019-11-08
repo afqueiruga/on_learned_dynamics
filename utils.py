@@ -50,7 +50,7 @@ def operator_from_tableau(Lambda, dt, tableau):
     b = tableau['b']
     c = tableau['c']
     I = np.eye(Lambda.shape[0])
-    Omegas = [ lmbda ]
+    Omegas = [ Lambda ]
     for i in range(1,len(c)):
         dui_du0 = I.copy()
         for j in range(i):

@@ -199,7 +199,6 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
     optim = torch.optim.Adam(model.parameters(),learning_rate)
     loss = torch.nn.MSELoss()
     losses=[]
-    N_print, N_trace = N_print, 100
     nsamp = data.shape[0] # The harmonic oscillator is periodic so a test set is meaningless
     for opt_iter in range(N_iter):
         idcs = torch.LongTensor(np.random.choice(nsamp-n_future, size=batch_size)).to(device)
@@ -232,5 +231,5 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
     if verbose:
         print("Converged with L1: ",losses[-1])
     if not callback is None:
-        callback(model,opt_iter,L.item())
+        callback(model,opt_iter,L.item(), do_it=True)
     return model, np.array(losses),
