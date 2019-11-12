@@ -4,9 +4,15 @@ import numpy as np
 # Routines for analyzing systems
 #
 def lambda_of_omega(Omega,dt):
-    """Takes the matrix log of a discrete operator to extract the continuous operator."""
+    """Takes the matrix log of a discrete operator to extract the 
+    continuous operator."""
     w,V = np.linalg.eig(Omega)
-    Lambda = 1/dt * V @ np.diag(np.log(w)) @ np.linalg.inv(V)
+    logw = np.log(w)
+    for i,a in enumerate(w):
+        if np.abs(a) <= 1e-12:
+            #print("setting",i)
+            logw[i]=0.0
+    Lambda = 1/dt * V @ np.diag(logw) @ np.linalg.inv(V)
     Lambda = np.array(Lambda,dtype=np.double)
     return Lambda
 

@@ -50,6 +50,7 @@ def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_futur
             pred_y = torchdiffeq.odeint(model, batch_y0, batch_t,
                                     method=met)
             L += torch.mean(torch.abs(pred_y - batch_y))
+        raw_loss = L.detach().cpu().numpy()/ len(methods) # Normalize it
         # Add regularizaiton
         # TODO: detect weights; this only works on one type of model
         if gamma_L1 > 0:
@@ -59,15 +60,15 @@ def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_futur
         # Do the backward step and optimize
         L.backward()
         optimizer.step()
-        losses.append(L.detach().cpu().numpy())
+        losses.append(raw_loss)
         if not callback is None and opt_iter%N_print==N_print-1:
-            callback(model,opt_iter,L.cpu().item())
+            callback(model,opt_iter,raw_loss)
         #if opt_iter % 1000 == 0:
         #    with torch.no_grad():
         #        pred_y = torchdiffeq.odeint(model, batch_y0, batch_t)
         #        loss = torch.mean(torch.abs(pred_y - batch_y))
     if not callback is None:
-        callback(model,opt_iter,L.cpu().item(), do_it=True)
+        callback(model,opt_iter,raw_loss, do_it=True)
     return model,np.array(losses)
 
 

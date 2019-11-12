@@ -59,7 +59,7 @@ def get_batch(data, t, N_batch, N_future):
     idcs = np.random.choice(np.arange(data.shape[0] - (N_future+1) , dtype=np.int64), N_batch, replace=False)
     s = torch.from_numpy(idcs)
     batch_u0 = data[s]  # (M, D)
-    batch_t= t[:(N_future+1)]  # (T)
+    batch_t = t[:(N_future+1)]  # (T)
     batch_u = torch.stack([ data[s+i] for i in range(N_future+1)], dim=0)  # (T, M, D)
     return batch_u0, batch_t, batch_u
 
@@ -209,6 +209,8 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
         for fut in range(2,n_future+1):
             yy_pred = model(yy_pred)
             L += loss(yy[fut], yy_pred)
+        raw_loss = L.detach().cpu().numpy()/ n_future # Normalize it
+
         # Add regularizaiton
         # TODO: detect weights; this only works on one type of model
         if gamma_L1 > 0:
@@ -219,17 +221,17 @@ def learn_rnn(data, model=None, batch_size=25, n_future=1,
         optim.zero_grad()
         L.backward()
         optim.step()
-        losses.append(L.cpu().detach().numpy())
+        losses.append(raw_loss)
 
         #model.net.weight.data[:] = torch.nn.functional.softshrink(model.net.weight.data, gamma)
 
         if not callback is None and opt_iter%N_print==N_print-1:
-            callback(model,opt_iter,L.item())
+            callback(model,opt_iter,raw_loss)
         # Print diagonistics during training
         if verbose and opt_iter%N_print==N_print-1:
-            print(opt_iter,L.item())
+            print(opt_iter,raw_loss)
     if verbose:
         print("Converged with L1: ",losses[-1])
     if not callback is None:
-        callback(model,opt_iter,L.item(), do_it=True)
+        callback(model,opt_iter,raw_loss, do_it=True)
     return model, np.array(losses),
