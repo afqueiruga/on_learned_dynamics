@@ -5,6 +5,9 @@ import matplotlib.animation as animation
 import cmocean
 from IPython.display import HTML
 
+from itertools import cycle
+from collections import defaultdict
+
 #from colorspace import diverging_hcl
 #pal = diverging_hcl(palette='Blue-Red 2')
 
@@ -13,6 +16,10 @@ from IPython.display import HTML
 # Universal settings for what paper figures should look like
 #
 FIG_SIZE_FULL = (16,6)
+colorwheel = cycle('rgby')
+markerwheel = cycle('osd')
+colordict = defaultdict(lambda : next(colorwheel))
+markerdict = defaultdict(lambda:next(markerwheel))
 
 #
 # 2D Plots

@@ -128,6 +128,8 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
         device = get_device()
 
     # Implementations of one-step methods
+    # TODO: Generalize it
+    # N_dim = 
     I = torch.eye(2, dtype=torch.double, device=device)
     fwstep = lambda model, y : y + dt*model(y)
     bwstep = lambda model, y : torch.einsum("ij,aj->ai",torch.inverse(I - dt*model.weight),y)
@@ -188,15 +190,20 @@ def learn_lambda(data, batch_size=25, n_future=1, verbose=False,
 # Learn a self-feeding model
 # TODO: RNN is the wrong word
 def learn_rnn(data, model=None, batch_size=25, n_future=1, 
-              learning_rate = 1.0e-4, N_iter = 50000, N_print=1e10, 
+              learning_rate = 1.0e-4, N_iter = 50000,
+              optimizer_key = 'adam',
               gamma_L1=0.0, gamma_L2=0.0,
-              verbose=False, device=None, callback=None):
+              verbose=False,
+              N_print=1e10, device=None, callback=None):
     """Perform the learning for an arbitrary model."""
     if device is None:
         device = get_device()
     if model==None:
         model = torch.nn.Linear(data.shape[-1],data.shape[-1],bias=False).double().to(device)
-    optim = torch.optim.Adam(model.parameters(),learning_rate)
+    if optimizer_key == 'adam':
+        optim = torch.optim.Adam(model.parameters(),learning_rate)
+    else:
+        optim = torch.optim.SGD(model.parameters(),learning_rate)
     loss = torch.nn.MSELoss()
     losses=[]
     nsamp = data.shape[0] # The harmonic oscillator is periodic so a test set is meaningless
