@@ -46,7 +46,7 @@ class Experiment():
         
     def name(self):
         "Returns a string identifier for plot labels."
-        pfx = "ode"+"".join([s[0] for s in self.methods]) if self.ode else "mat"
+        pfx = ( "ode_"+"".join([s[0] for s in self.methods]) ) if self.ode else "mat"
         return f"""{pfx}_{self.gamma_L1:1.1e}_{self.gamma_L2:1.1e}_{self.learning_rate:1.1e}_{self.batch_size}"""
 
     def _callback(self, model, opt_iter, loss, do_it=False):
@@ -168,8 +168,8 @@ def plot_omega_lambda(stash):
 
 def DT_Run(t_max, model_params, N_iter=5000, save_root=None):
     """Do a set of experiments for a given DT"""
-    # Make the dataset
     
+    # Make the dataset
     ts, data = analytical_solutions.make_wave_dataset(10, 500, t_max=t_max,
                              params=analytical_solutions.WAVE_PARAMS[1])
     torch_data = data_to_torch(data, device=device)
@@ -179,8 +179,11 @@ def DT_Run(t_max, model_params, N_iter=5000, save_root=None):
     print(dt)
     # Loop over the results
     # TODO load it
-    stash = {}
-    #N_iter = 100000
+    fname = save_root+f"/save_wave_{int(t_max)}.pkl"
+    try:
+        stash = torch.load(fname)
+    except:
+        stash = {}
     # TODO: parallelize
     for exp in model_params:
         try:
@@ -193,18 +196,67 @@ def DT_Run(t_max, model_params, N_iter=5000, save_root=None):
 
     # save the stash
     if not save_root is None:
-        with open(save_root+f"/save_wave_{t_max}.pkl","wb") as f:
+        with open(fname,"wb") as f:
             torch.save(stash,f)
     # return the pointer to the stash
     return stash
+
+def run_sim(t_max, meaning, gamma_L1, gamma_L2, learning_rate, batch_size):
+    # Make the dataset
+    ts, data = analytical_solutions.make_wave_dataset(10, 500, t_max=t_max,
+                             params=analytical_solutions.WAVE_PARAMS[1])
+    torch_data = data_to_torch(data, device=device)
+    torch_ts = data_to_torch(ts, device=device)
+    NT,_,NX = data.shape
+
+    keymap={'e':'euler','m':'midpoint','r':'rk4'}
+    if '_' in meaning:
+        methods = [ keymap[e] for e in meaning.split('_')[1] ]
+    else:
+        methods = None
+    exp_obj = Experiment(torch_data,torch_ts,(2,NX),
+                         ode=meaning[0]=='o',
+                         methods=methods,
+                         gamma_L1=gamma_L1, gamma_L2=gamma_L2, 
+                         learning_rate=learning_rate, batch_size=batch_size)
+    N_iter=200000
+    exp_obj.train(N_iter=N_iter)
+    return exp_obj,
 
 if __name__=='__main__':
     device=get_device()
     set_seed()
     model_params = [
-        dict(learning_rate=1.0e-2,batch_size=250),
-        dict(gamma_L1 = 0, gamma_L2 = 1.0e-7,learning_rate=1.0e-2,batch_size=250),
-        dict(ode=True,methods=('euler',),learning_rate=1.0e-2,batch_size=250),
-        dict(ode=True,methods=('midpoint','rk4'),learning_rate=1.0e-2,batch_size=250),
+        #dict(ode=False,gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
+        #dict(ode=False,gamma_L1=0, gamma_L2 = 1.0e-7, learning_rate=1.0e-2,batch_size=250),
+        #dict(ode=True,methods=('euler',),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
+        #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
+        #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-3,batch_size=250),
+        #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-4,batch_size=250),
+        dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-1,batch_size=250),
+        dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=2.0e-1,batch_size=250),
+        dict(ode=True,methods=('euler','midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-1,batch_size=250),
+        dict(ode=True,methods=('euler','midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=2.0e-1,batch_size=250),
+        #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0,batch_size=250),
     ]
-    stash = DT_Run(83,model_params,N_iter=1000,save_root='.')
+    ts = [ 0.8,0.9,1.0,1.25,1.5,2.0,3.0,] # 6.0,13.0, 23.0,43.0, 53.0, 63.0, 73.0,78.0, 83.0 ]
+    #for t_max in ts:
+    #    stash = DT_Run(t_max,model_params,N_iter=100000,save_root='results/')
+
+    from SimDataDB import SimDataDB
+    sdb = SimDataDB('results/wave.sqlite')
+    run = sdb.Decorate('wave',
+                  [('t_max','FLOAT'),('meaning','VARCAHR(30)'),('gamma_L1','FLOAT'),
+                  ('gamma_L2','FLOAT'),('learning_rate','FLOAT'),('batch_size','INT') ],
+                  [('experiment','pickle')],
+                      memoize=False)(run_sim)
+    
+    for t_max in ts:
+        for params in model_params:
+            if params['ode']:
+                meaning = 'ode_' + ''.join([m[0] for m in params['methods']])
+            else:
+                meaning='mat'
+            run(t_max, meaning, params['gamma_L1'],params['gamma_L2'], 
+                params['learning_rate'], params['batch_size'],)
+    
