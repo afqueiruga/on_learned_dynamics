@@ -166,11 +166,11 @@ def plot_omega_lambda(stash):
     plt.show()
 
 
-def DT_Run(t_max, model_params, N_iter=5000, save_root=None):
-    """Do a set of experiments for a given DT"""
-    
+def DT_Run(t_max, model_params, N_iter=5000, N_data_points=500, save_root=None):
+    """DEPRECATED Do a set of experiments for a given DT"""
+    # TODO Make more data!
     # Make the dataset
-    ts, data = analytical_solutions.make_wave_dataset(10, 500, t_max=t_max,
+    ts, data = analytical_solutions.make_wave_dataset(10, N_data_points, t_max=t_max,
                              params=analytical_solutions.WAVE_PARAMS[1])
     torch_data = data_to_torch(data, device=device)
     torch_ts = data_to_torch(ts, device=device)
@@ -203,7 +203,9 @@ def DT_Run(t_max, model_params, N_iter=5000, save_root=None):
 
 def run_sim(t_max, meaning, gamma_L1, gamma_L2, learning_rate, batch_size):
     # Make the dataset
-    ts, data = analytical_solutions.make_wave_dataset(10, 500, t_max=t_max,
+    # TODO Change the delta X
+    N_data_points=1000
+    ts, data = analytical_solutions.make_wave_dataset(10, N_data_points, t_max=t_max,
                              params=analytical_solutions.WAVE_PARAMS[1])
     torch_data = data_to_torch(data, device=device)
     torch_ts = data_to_torch(ts, device=device)
@@ -244,7 +246,7 @@ if __name__=='__main__':
     #    stash = DT_Run(t_max,model_params,N_iter=100000,save_root='results/')
 
     from SimDataDB import SimDataDB
-    sdb = SimDataDB('results/wave.sqlite')
+    sdb = SimDataDB('results/wave_more_data.sqlite')
     run = sdb.Decorate('wave',
                   [('t_max','FLOAT'),('meaning','VARCAHR(30)'),('gamma_L1','FLOAT'),
                   ('gamma_L2','FLOAT'),('learning_rate','FLOAT'),('batch_size','INT') ],
