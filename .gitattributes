@@ -1,0 +1,4 @@
+results/pendulum_theta_conv.pkl filter=lfs diff=lfs merge=lfs -text
+results/pendulum_xy_conv.pkl filter=lfs diff=lfs merge=lfs -text
+results/pendulum_xy_models.pkl filter=lfs diff=lfs merge=lfs -text
+results/wave.sqlite filter=lfs diff=lfs merge=lfs -text
