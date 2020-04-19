@@ -201,11 +201,11 @@ def DT_Run(t_max, model_params, N_iter=5000, N_data_points=500, save_root=None):
     # return the pointer to the stash
     return stash
 
-def run_sim(t_max, meaning, gamma_L1, gamma_L2, learning_rate, batch_size):
+def run_sim(t_max, Nx, meaning, gamma_L1, gamma_L2, learning_rate, batch_size):
     # Make the dataset
     # TODO Change the delta X
     N_data_points=1000
-    ts, data = analytical_solutions.make_wave_dataset(10, N_data_points, t_max=t_max,
+    ts, data = analytical_solutions.make_wave_dataset(Nx, N_data_points, t_max=t_max,
                              params=analytical_solutions.WAVE_PARAMS[1])
     torch_data = data_to_torch(data, device=device)
     torch_ts = data_to_torch(ts, device=device)
@@ -229,9 +229,9 @@ if __name__=='__main__':
     device=get_device()
     set_seed()
     model_params = [
-        #dict(ode=False,gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
-        #dict(ode=False,gamma_L1=0, gamma_L2 = 1.0e-7, learning_rate=1.0e-2,batch_size=250),
-        #dict(ode=True,methods=('euler',),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
+        dict(ode=False,gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
+        dict(ode=False,gamma_L1=0, gamma_L2 = 1.0e-7, learning_rate=1.0e-2,batch_size=250),
+        dict(ode=True,methods=('euler',),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
         #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-2,batch_size=250),
         #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-3,batch_size=250),
         #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0e-4,batch_size=250),
@@ -241,24 +241,24 @@ if __name__=='__main__':
         dict(ode=True,methods=('euler','midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=2.0e-1,batch_size=250),
         #dict(ode=True,methods=('midpoint','rk4'),gamma_L1 = 0, gamma_L2 = 0,learning_rate=1.0,batch_size=250),
     ]
-    ts = [ 0.8,0.9,1.0,1.25,1.5,2.0,3.0,] # 6.0,13.0, 23.0,43.0, 53.0, 63.0, 73.0,78.0, 83.0 ]
-    #for t_max in ts:
-    #    stash = DT_Run(t_max,model_params,N_iter=100000,save_root='results/')
-
+    ts = [ 1.0 ] #0.8,0.9,1.0,1.25,1.5,2.0,3.0,] # 6.0,13.0, 23.0,43.0, 53.0, 63.0, 73.0,78.0, 83.0 ]
+    xs = [ 3,4,10, 15, 20, 25 ]
     from SimDataDB import SimDataDB
-    sdb = SimDataDB('results/wave_more_data.sqlite')
+    sdb = SimDataDB('results/wave_2.sqlite')
     run = sdb.Decorate('wave',
-                  [('t_max','FLOAT'),('meaning','VARCAHR(30)'),('gamma_L1','FLOAT'),
+                  [('t_max','FLOAT'),('Nx','INT'),
+                   ('meaning','VARCAHR(30)'),('gamma_L1','FLOAT'),
                   ('gamma_L2','FLOAT'),('learning_rate','FLOAT'),('batch_size','INT') ],
                   [('experiment','pickle')],
                       memoize=False)(run_sim)
     
     for t_max in ts:
-        for params in model_params:
-            if params['ode']:
-                meaning = 'ode_' + ''.join([m[0] for m in params['methods']])
-            else:
-                meaning='mat'
-            run(t_max, meaning, params['gamma_L1'],params['gamma_L2'], 
-                params['learning_rate'], params['batch_size'],)
-    
+        for Nx in xs:
+            for params in model_params:
+                if params['ode']:
+                    meaning = 'ode_' + ''.join([m[0] for m in params['methods']])
+                else:
+                    meaning='mat'
+                run(t_max, Nx, meaning, params['gamma_L1'],params['gamma_L2'], 
+                    params['learning_rate'], params['batch_size'],)
+
