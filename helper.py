@@ -8,8 +8,8 @@ import torch.nn.init as init
 #
 def set_seed():
     """Set one seed for reproducibility."""
-    np.random.seed(10)
-    torch.manual_seed(10)
+    np.random.seed(0)
+    torch.manual_seed(0)
 
 def get_device():
     """Get a gpu if available."""

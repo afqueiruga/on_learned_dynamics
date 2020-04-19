@@ -36,26 +36,21 @@ def train_a_neural_ode_multi_method(data, ts, model=None, batch_size=25, n_futur
     if device is None:
         device = get_device()
     if optimizer_key == 'adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
-                                weight_decay=weight_decay)
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     else:
-        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
-                                weight_decay=weight_decay)
+        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     
     loss = torch.nn.MSELoss()
     #  loss ::= torch.mean(torch.abs(pred_y - batch_y)) # what we were using previously
     losses = []
     for opt_iter in range(N_iter):
         optimizer.zero_grad()
-        batch_y0, batch_t, batch_y = get_batch(data, ts,
-                                               batch_size, n_future)
+        batch_y0, batch_t, batch_y = get_batch(data, ts, batch_size, n_future)
         
-        pred_y = torchdiffeq.odeint(model, batch_y0, batch_t,
-                                    method=methods[0])
+        pred_y = torchdiffeq.odeint(model, batch_y0, batch_t, method=methods[0])
         L = loss(pred_y, batch_y)
         for met in methods[1:]:
-            pred_y = torchdiffeq.odeint(model, batch_y0, batch_t,
-                                    method=met)
+            pred_y = torchdiffeq.odeint(model, batch_y0, batch_t, method=met)
             L += loss(pred_y, batch_y) 
         raw_loss = L.detach().cpu().numpy() / len(methods) / n_future # Normalize it
         # Add regularizaiton

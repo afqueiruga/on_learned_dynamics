@@ -15,7 +15,7 @@ from collections import defaultdict
 #
 # Universal settings for what paper figures should look like
 #
-FIG_SIZE_FULL = (16,6)
+FIG_SIZE_FULL = (12,6)
 colorwheel = cycle('rgby')
 markerwheel = cycle('osd')
 colordict = defaultdict(lambda : next(colorwheel))
@@ -48,8 +48,8 @@ def trajectory_plots(trajs):
     plt.tick_params(axis='x', labelsize=16)   
     plt.locator_params(axis='y', nbins=6)
     plt.locator_params(axis='x', nbins=6) 
-    plt.ylim(-1.2,1.2)
-    plt.xlim(-1.2,1.2)
+    #plt.ylim(-1.2,1.2)
+    #plt.xlim(-1.2,1.2)
 
 def plot_embedding(TRANSFER, experimental_omegas, path_omega, known_omegas, traces=None):
     """Embed and plot the operators, given a callback to the embedding object."""

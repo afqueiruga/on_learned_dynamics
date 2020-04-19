@@ -58,11 +58,12 @@ class ShallowNet(torch.nn.Module):
     
 class ShallowSkipNet(torch.nn.Module):
     """A basic shallow network with a skip connection"""
-    def __init__(self, dim, hidden=10, Act=torch.nn.ReLU):
+    def __init__(self, dim, hidden=10, Act=torch.nn.ReLU, eps = 0.1):
         super(ShallowSkipNet,self).__init__()
+        self.eps = eps
         self.net = shallow(dim,hidden,dim,Act=Act)
     def forward(self,x):
-        return x+self.net(x)
+        return x + self.eps * self.net(x)
 
 #
 # Networks for ODEs. A different call structure
