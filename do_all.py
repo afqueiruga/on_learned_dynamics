@@ -28,7 +28,7 @@ T_MAX_TO_TRAIN = 200.0
 # N_ITER = 25000  # From paper.
 N_ITER = 50000  # Push it harder.
 N_SAMPLE = 5
-DTS_TO_TRAIN = [ 0.4, 0.2, 0.1, 0.01, 0.001 ]
+DTS_TO_TRAIN = [ 0.4, 0.2, 0.1, 0.02, 0.01, 0.002, 0.001 ]
 N_DATA_TO_TRAIN = [ int(T_MAX_TO_TRAIN//dt)+1 for dt in DTS_TO_TRAIN ]
 SCHEMES = ['euler', 'midpoint', 'rk4']
 
