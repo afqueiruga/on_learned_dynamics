@@ -61,16 +61,40 @@ SCHEME_TABLE = {
     'RK4': RK4,
     }
 
+
+#
+# Integration loops
+#
 def OdeIntWithPoints(params, x0, f=None, scheme=Euler, Dt=1.0, N_step=1):
+    """Integrate a function f in time, and return the complete trajectory.
+
+    Args:
+      params: The optimizable parameters of f.
+      x0: The initial point at x(t=0).
+      f: The rate, of the signature dx/dt:=f(params, x(t)).
+      scheme: A callable function that implements one step of f with Dt. See the
+        above options.
+      Dt: The fixed time step size.
+      N_step: How many fixed steps in time to take.
+    
+    Returns:
+      [ [x(0)], [x(Dt)], [x(2*Dt)] ... [x(N_step * Dt)] ]"""
     x = x0
-    xs = onp.empty((N_step,) + x0.shape)
+    xs = onp.empty((N_step+1,) + x0.shape)
+    xs[0,:] = x0
     for i in range(N_step):
         x = scheme(params, x, f, Dt)
-        xs[i,:] = x
+        xs[i+1,:] = x
     return xs
 
 
 def OdeIntFast(params, x0, f=None, scheme=Euler, Dt=1.0, N_step=1):
+    """Numerical integrate f quickly, without saving the trajectory.
+
+    This version is meant to be used for training.
+
+    It returns [x(N_step*Dt)] only, with the same shape as x0.
+    """
     x = x0
     for i in range(N_step):
         x = scheme(params, x, f, Dt)
